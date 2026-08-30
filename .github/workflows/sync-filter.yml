@@ -3,7 +3,7 @@ name: Sync upstream and filter SMART
 # 定时同步上游 fleung49/star,并自动过滤 SMART 中的成人分类
 on:
   schedule:
-    - cron: "0 */8 * * *"   # 每 6 小时一次(UTC),可自行调整
+    - cron: "0 */8 * * *"   # 每 8 小时一次(UTC),可自行调整
   workflow_dispatch:          # 支持在 Actions 页面手动触发
 
 permissions:
