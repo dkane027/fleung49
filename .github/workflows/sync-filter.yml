@@ -1,0 +1,47 @@
+name: Sync upstream and filter SMART
+
+# 定时同步上游 fleung49/star,并自动过滤 SMART 中的成人分类
+on:
+  schedule:
+    - cron: "0 */6 * * *"   # 每 6 小时一次(UTC),可自行调整
+  workflow_dispatch:          # 支持在 Actions 页面手动触发
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sync-filter
+  cancel-in-progress: true
+
+jobs:
+  sync-and-filter:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout fork
+        uses: actions/checkout@v4
+
+      - name: Sync files from upstream
+        run: |
+          git clone --depth 1 https://github.com/fleung49/star.git /tmp/upstream
+          # 同步上游全部文件,但保留本仓库自己的 .github 和 scripts 目录
+          rsync -a --delete \
+            --exclude='.git' \
+            --exclude='.github' \
+            --exclude='scripts' \
+            /tmp/upstream/ ./
+          echo "上游最新提交: $(cd /tmp/upstream && git log -1 --format='%h %ci %s')"
+
+      - name: Filter adult categories in SMART
+        run: python3 scripts/filter_smart.py SMART
+
+      - name: Commit and push if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "没有变化,无需提交"
+          else
+            git commit -m "Sync from upstream + filter adult channels [skip ci]"
+            git push
+          fi
